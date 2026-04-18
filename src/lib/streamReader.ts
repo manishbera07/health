@@ -27,7 +27,7 @@ export interface StreamHandlers {
 /* ---------- Web Serial ---------- */
 
 export class SerialStream {
-  private port: SerialPort | null = null;
+  private port: any = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private buffer = new LineBuffer();
   private stopped = false;
