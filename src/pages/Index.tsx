@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
+import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { parseLine, recordsToCSV, type HealthRecord } from "@/lib/parser";
 import {
+  BluetoothStream,
   SerialStream,
   WebSocketStream,
   type ConnectionStatus,
@@ -16,7 +17,7 @@ import {
 const MAX_RECORDS = 100;
 const RENDER_INTERVAL_MS = 80;
 
-type Mode = "serial" | "ws";
+type Mode = "serial" | "ble" | "ws";
 
 const StatusDot = ({ status }: { status: ConnectionStatus }) => {
   const map: Record<ConnectionStatus, { color: string; label: string; pulse: boolean }> = {
@@ -96,6 +97,7 @@ const Index = () => {
 
   const serialRef = useRef<SerialStream | null>(null);
   const wsRef = useRef<WebSocketStream | null>(null);
+  const bleRef = useRef<BluetoothStream | null>(null);
 
   // Debounced render buffer
   const pendingLatest = useRef<HealthRecord | null>(null);
@@ -147,12 +149,20 @@ const Index = () => {
   const connect = useCallback(async () => {
     if (mode === "serial") {
       if (!SerialStream.isSupported()) {
-        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch to WebSocket.");
+        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch mode.");
         return;
       }
       const s = new SerialStream({ onLine: handleLine, onStatus: handleStatus });
       serialRef.current = s;
       await s.connect(115200);
+    } else if (mode === "ble") {
+      if (!BluetoothStream.isSupported()) {
+        toast.error("Web Bluetooth isn't supported here. Use Chrome/Edge on desktop or Android.");
+        return;
+      }
+      const b = new BluetoothStream({ onLine: handleLine, onStatus: handleStatus });
+      bleRef.current = b;
+      await b.connect();
     } else {
       const w = new WebSocketStream({ onLine: handleLine, onStatus: handleStatus });
       wsRef.current = w;
@@ -162,8 +172,10 @@ const Index = () => {
 
   const disconnect = useCallback(async () => {
     await serialRef.current?.disconnect();
+    await bleRef.current?.disconnect();
     wsRef.current?.disconnect();
     serialRef.current = null;
+    bleRef.current = null;
     wsRef.current = null;
     setStatus("disconnected");
   }, []);
@@ -171,6 +183,7 @@ const Index = () => {
   useEffect(() => {
     return () => {
       serialRef.current?.disconnect();
+      bleRef.current?.disconnect();
       wsRef.current?.disconnect();
       if (rafTimer.current !== null) window.clearTimeout(rafTimer.current);
     };
@@ -248,6 +261,9 @@ const Index = () => {
                   <TabsTrigger value="serial" disabled={isConnected}>
                     <Cable className="mr-2 h-4 w-4" /> Web Serial
                   </TabsTrigger>
+                  <TabsTrigger value="ble" disabled={isConnected}>
+                    <Bluetooth className="mr-2 h-4 w-4" /> Bluetooth (BLE)
+                  </TabsTrigger>
                   <TabsTrigger value="ws" disabled={isConnected}>
                     <Wifi className="mr-2 h-4 w-4" /> WebSocket
                   </TabsTrigger>
@@ -256,6 +272,14 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">
                     Connect ESP32 via USB at <span className="font-mono-tabular">115200</span> baud.
                     Click Connect, then choose your device.
+                  </p>
+                </TabsContent>
+                <TabsContent value="ble" className="mt-3">
+                  <p className="text-sm text-muted-foreground">
+                    Connect to ESP32 over BLE using the{" "}
+                    <span className="font-mono-tabular">Nordic UART Service</span>{" "}
+                    (<span className="font-mono-tabular">6e400001-…</span>). Firmware must advertise
+                    NUS and notify on the TX characteristic.
                   </p>
                 </TabsContent>
                 <TabsContent value="ws" className="mt-3 space-y-2">
