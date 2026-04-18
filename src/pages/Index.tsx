@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
+import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { parseLine, recordsToCSV, type HealthRecord } from "@/lib/parser";
 import {
+  BluetoothStream,
   SerialStream,
   WebSocketStream,
   type ConnectionStatus,
