@@ -87,14 +87,12 @@ const fmt = (n: number | null, digits = 0) =>
 
 const Index = () => {
   const [mode, setMode] = useState<Mode>("serial");
-  const [wsUrl, setWsUrl] = useState("ws://localhost:8080");
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [statusDetail, setStatusDetail] = useState<string>("");
   const [latest, setLatest] = useState<HealthRecord | null>(null);
   const [records, setRecords] = useState<HealthRecord[]>([]);
 
   const serialRef = useRef<SerialStream | null>(null);
-  const wsRef = useRef<WebSocketStream | null>(null);
   const bleRef = useRef<BluetoothStream | null>(null);
 
   // Debounced render buffer
@@ -147,13 +145,13 @@ const Index = () => {
   const connect = useCallback(async () => {
     if (mode === "serial") {
       if (!SerialStream.isSupported()) {
-        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch mode.");
+        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch to Bluetooth.");
         return;
       }
       const s = new SerialStream({ onLine: handleLine, onStatus: handleStatus });
       serialRef.current = s;
       await s.connect(115200);
-    } else if (mode === "ble") {
+    } else {
       if (!BluetoothStream.isSupported()) {
         toast.error("Web Bluetooth isn't supported here. Use Chrome/Edge on desktop or Android.");
         return;
@@ -161,20 +159,14 @@ const Index = () => {
       const b = new BluetoothStream({ onLine: handleLine, onStatus: handleStatus });
       bleRef.current = b;
       await b.connect();
-    } else {
-      const w = new WebSocketStream({ onLine: handleLine, onStatus: handleStatus });
-      wsRef.current = w;
-      w.connect(wsUrl);
     }
-  }, [mode, wsUrl, handleLine, handleStatus]);
+  }, [mode, handleLine, handleStatus]);
 
   const disconnect = useCallback(async () => {
     await serialRef.current?.disconnect();
     await bleRef.current?.disconnect();
-    wsRef.current?.disconnect();
     serialRef.current = null;
     bleRef.current = null;
-    wsRef.current = null;
     setStatus("disconnected");
   }, []);
 
@@ -182,7 +174,6 @@ const Index = () => {
     return () => {
       serialRef.current?.disconnect();
       bleRef.current?.disconnect();
-      wsRef.current?.disconnect();
       if (rafTimer.current !== null) window.clearTimeout(rafTimer.current);
     };
   }, []);
