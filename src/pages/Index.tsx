@@ -261,6 +261,9 @@ const Index = () => {
                   <TabsTrigger value="serial" disabled={isConnected}>
                     <Cable className="mr-2 h-4 w-4" /> Web Serial
                   </TabsTrigger>
+                  <TabsTrigger value="ble" disabled={isConnected}>
+                    <Bluetooth className="mr-2 h-4 w-4" /> Bluetooth (BLE)
+                  </TabsTrigger>
                   <TabsTrigger value="ws" disabled={isConnected}>
                     <Wifi className="mr-2 h-4 w-4" /> WebSocket
                   </TabsTrigger>
@@ -269,6 +272,14 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">
                     Connect ESP32 via USB at <span className="font-mono-tabular">115200</span> baud.
                     Click Connect, then choose your device.
+                  </p>
+                </TabsContent>
+                <TabsContent value="ble" className="mt-3">
+                  <p className="text-sm text-muted-foreground">
+                    Connect to ESP32 over BLE using the{" "}
+                    <span className="font-mono-tabular">Nordic UART Service</span>{" "}
+                    (<span className="font-mono-tabular">6e400001-…</span>). Firmware must advertise
+                    NUS and notify on the TX characteristic.
                   </p>
                 </TabsContent>
                 <TabsContent value="ws" className="mt-3 space-y-2">
