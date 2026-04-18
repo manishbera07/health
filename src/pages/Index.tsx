@@ -17,7 +17,7 @@ import {
 const MAX_RECORDS = 100;
 const RENDER_INTERVAL_MS = 80;
 
-type Mode = "serial" | "ws";
+type Mode = "serial" | "ble" | "ws";
 
 const StatusDot = ({ status }: { status: ConnectionStatus }) => {
   const map: Record<ConnectionStatus, { color: string; label: string; pulse: boolean }> = {
