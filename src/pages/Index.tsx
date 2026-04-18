@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
+import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -10,14 +9,13 @@ import { parseLine, recordsToCSV, type HealthRecord } from "@/lib/parser";
 import {
   BluetoothStream,
   SerialStream,
-  WebSocketStream,
   type ConnectionStatus,
 } from "@/lib/streamReader";
 
 const MAX_RECORDS = 100;
 const RENDER_INTERVAL_MS = 80;
 
-type Mode = "serial" | "ble" | "ws";
+type Mode = "serial" | "ble";
 
 const StatusDot = ({ status }: { status: ConnectionStatus }) => {
   const map: Record<ConnectionStatus, { color: string; label: string; pulse: boolean }> = {
