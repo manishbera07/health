@@ -87,38 +87,6 @@ export class SerialStream {
   }
 }
 
-/* ---------- WebSocket ---------- */
-
-export class WebSocketStream {
-  private ws: WebSocket | null = null;
-  private buffer = new LineBuffer();
-
-  constructor(private handlers: StreamHandlers) {}
-
-  connect(url: string) {
-    try {
-      this.handlers.onStatus("connecting");
-      this.ws = new WebSocket(url);
-      this.ws.onopen = () => this.handlers.onStatus("connected", url);
-      this.ws.onmessage = (ev) => {
-        const data = typeof ev.data === "string" ? ev.data : "";
-        if (!data) return;
-        const lines = this.buffer.feed(data.endsWith("\n") ? data : data + "\n");
-        for (const line of lines) this.handlers.onLine(line);
-      };
-      this.ws.onerror = () => this.handlers.onStatus("error", "WebSocket error");
-      this.ws.onclose = () => this.handlers.onStatus("disconnected");
-    } catch (e: any) {
-      this.handlers.onStatus("error", e?.message ?? "WebSocket error");
-    }
-  }
-
-  disconnect() {
-    try { this.ws?.close(); } catch {}
-    this.ws = null;
-  }
-}
-
 /* ---------- Web Bluetooth (Nordic UART Service) ---------- */
 
 export const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";

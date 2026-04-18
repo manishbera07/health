@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio, Wifi } from "lucide-react";
+import { Activity, Bluetooth, Cable, Download, Plug, PlugZap, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -10,14 +9,13 @@ import { parseLine, recordsToCSV, type HealthRecord } from "@/lib/parser";
 import {
   BluetoothStream,
   SerialStream,
-  WebSocketStream,
   type ConnectionStatus,
 } from "@/lib/streamReader";
 
 const MAX_RECORDS = 100;
 const RENDER_INTERVAL_MS = 80;
 
-type Mode = "serial" | "ble" | "ws";
+type Mode = "serial" | "ble";
 
 const StatusDot = ({ status }: { status: ConnectionStatus }) => {
   const map: Record<ConnectionStatus, { color: string; label: string; pulse: boolean }> = {
@@ -89,14 +87,12 @@ const fmt = (n: number | null, digits = 0) =>
 
 const Index = () => {
   const [mode, setMode] = useState<Mode>("serial");
-  const [wsUrl, setWsUrl] = useState("ws://localhost:8080");
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [statusDetail, setStatusDetail] = useState<string>("");
   const [latest, setLatest] = useState<HealthRecord | null>(null);
   const [records, setRecords] = useState<HealthRecord[]>([]);
 
   const serialRef = useRef<SerialStream | null>(null);
-  const wsRef = useRef<WebSocketStream | null>(null);
   const bleRef = useRef<BluetoothStream | null>(null);
 
   // Debounced render buffer
@@ -149,13 +145,13 @@ const Index = () => {
   const connect = useCallback(async () => {
     if (mode === "serial") {
       if (!SerialStream.isSupported()) {
-        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch mode.");
+        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch to Bluetooth.");
         return;
       }
       const s = new SerialStream({ onLine: handleLine, onStatus: handleStatus });
       serialRef.current = s;
       await s.connect(115200);
-    } else if (mode === "ble") {
+    } else {
       if (!BluetoothStream.isSupported()) {
         toast.error("Web Bluetooth isn't supported here. Use Chrome/Edge on desktop or Android.");
         return;
@@ -163,20 +159,14 @@ const Index = () => {
       const b = new BluetoothStream({ onLine: handleLine, onStatus: handleStatus });
       bleRef.current = b;
       await b.connect();
-    } else {
-      const w = new WebSocketStream({ onLine: handleLine, onStatus: handleStatus });
-      wsRef.current = w;
-      w.connect(wsUrl);
     }
-  }, [mode, wsUrl, handleLine, handleStatus]);
+  }, [mode, handleLine, handleStatus]);
 
   const disconnect = useCallback(async () => {
     await serialRef.current?.disconnect();
     await bleRef.current?.disconnect();
-    wsRef.current?.disconnect();
     serialRef.current = null;
     bleRef.current = null;
-    wsRef.current = null;
     setStatus("disconnected");
   }, []);
 
@@ -184,7 +174,6 @@ const Index = () => {
     return () => {
       serialRef.current?.disconnect();
       bleRef.current?.disconnect();
-      wsRef.current?.disconnect();
       if (rafTimer.current !== null) window.clearTimeout(rafTimer.current);
     };
   }, []);
@@ -264,9 +253,6 @@ const Index = () => {
                   <TabsTrigger value="ble" disabled={isConnected}>
                     <Bluetooth className="mr-2 h-4 w-4" /> Bluetooth (BLE)
                   </TabsTrigger>
-                  <TabsTrigger value="ws" disabled={isConnected}>
-                    <Wifi className="mr-2 h-4 w-4" /> WebSocket
-                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="serial" className="mt-3">
                   <p className="text-sm text-muted-foreground">
@@ -281,16 +267,6 @@ const Index = () => {
                     (<span className="font-mono-tabular">6e400001-…</span>). Firmware must advertise
                     NUS and notify on the TX characteristic.
                   </p>
-                </TabsContent>
-                <TabsContent value="ws" className="mt-3 space-y-2">
-                  <label className="text-sm text-muted-foreground">Bridge URL</label>
-                  <Input
-                    value={wsUrl}
-                    onChange={(e) => setWsUrl(e.target.value)}
-                    disabled={isConnected}
-                    placeholder="ws://localhost:8080"
-                    className="font-mono-tabular max-w-md"
-                  />
                 </TabsContent>
               </Tabs>
             </div>
