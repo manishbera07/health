@@ -253,9 +253,6 @@ const Index = () => {
                   <TabsTrigger value="ble" disabled={isConnected}>
                     <Bluetooth className="mr-2 h-4 w-4" /> Bluetooth (BLE)
                   </TabsTrigger>
-                  <TabsTrigger value="ws" disabled={isConnected}>
-                    <Wifi className="mr-2 h-4 w-4" /> WebSocket
-                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="serial" className="mt-3">
                   <p className="text-sm text-muted-foreground">
@@ -270,16 +267,6 @@ const Index = () => {
                     (<span className="font-mono-tabular">6e400001-…</span>). Firmware must advertise
                     NUS and notify on the TX characteristic.
                   </p>
-                </TabsContent>
-                <TabsContent value="ws" className="mt-3 space-y-2">
-                  <label className="text-sm text-muted-foreground">Bridge URL</label>
-                  <Input
-                    value={wsUrl}
-                    onChange={(e) => setWsUrl(e.target.value)}
-                    disabled={isConnected}
-                    placeholder="ws://localhost:8080"
-                    className="font-mono-tabular max-w-md"
-                  />
                 </TabsContent>
               </Tabs>
             </div>
