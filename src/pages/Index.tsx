@@ -97,6 +97,7 @@ const Index = () => {
 
   const serialRef = useRef<SerialStream | null>(null);
   const wsRef = useRef<WebSocketStream | null>(null);
+  const bleRef = useRef<BluetoothStream | null>(null);
 
   // Debounced render buffer
   const pendingLatest = useRef<HealthRecord | null>(null);
@@ -148,12 +149,20 @@ const Index = () => {
   const connect = useCallback(async () => {
     if (mode === "serial") {
       if (!SerialStream.isSupported()) {
-        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch to WebSocket.");
+        toast.error("Web Serial isn't supported here. Use Chrome/Edge or switch mode.");
         return;
       }
       const s = new SerialStream({ onLine: handleLine, onStatus: handleStatus });
       serialRef.current = s;
       await s.connect(115200);
+    } else if (mode === "ble") {
+      if (!BluetoothStream.isSupported()) {
+        toast.error("Web Bluetooth isn't supported here. Use Chrome/Edge on desktop or Android.");
+        return;
+      }
+      const b = new BluetoothStream({ onLine: handleLine, onStatus: handleStatus });
+      bleRef.current = b;
+      await b.connect();
     } else {
       const w = new WebSocketStream({ onLine: handleLine, onStatus: handleStatus });
       wsRef.current = w;
@@ -163,8 +172,10 @@ const Index = () => {
 
   const disconnect = useCallback(async () => {
     await serialRef.current?.disconnect();
+    await bleRef.current?.disconnect();
     wsRef.current?.disconnect();
     serialRef.current = null;
+    bleRef.current = null;
     wsRef.current = null;
     setStatus("disconnected");
   }, []);
@@ -172,6 +183,7 @@ const Index = () => {
   useEffect(() => {
     return () => {
       serialRef.current?.disconnect();
+      bleRef.current?.disconnect();
       wsRef.current?.disconnect();
       if (rafTimer.current !== null) window.clearTimeout(rafTimer.current);
     };
