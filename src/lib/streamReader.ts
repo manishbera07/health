@@ -165,10 +165,12 @@ export class BluetoothStream {
   };
 
   async disconnect() {
+    this.connected = false;
     try {
       this.txChar?.removeEventListener("characteristicvaluechanged", this.onValue);
       await this.txChar?.stopNotifications();
     } catch {}
+    try { this.device?.removeEventListener("gattserverdisconnected", this.onDisconnect); } catch {}
     try { this.device?.gatt?.disconnect(); } catch {}
     this.device = null;
     this.txChar = null;
