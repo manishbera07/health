@@ -68,6 +68,16 @@ export const ConnectionPanel = ({ mode, setMode, status, detail, onConnect, onDi
           ? "USB at 115200 baud. Use Chrome or Edge."
           : "BLE via Nordic UART Service (6e400001-…). Chrome/Edge desktop or Android."}
       </p>
+
+      {typeof window !== "undefined" && window.self !== window.top && (
+        <div className="mt-3 rounded-xl border border-warning/40 bg-warning/5 p-3 text-xs">
+          <p className="font-semibold text-warning">Preview limitation</p>
+          <p className="mt-0.5 text-muted-foreground">
+            Web Serial & Web Bluetooth are blocked inside the Lovable preview iframe by the browser.
+            Open this app in its own tab (the "Open in new tab" button above the preview, or your published URL) to connect to your ESP32.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
