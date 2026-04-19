@@ -48,11 +48,16 @@ export function parseLine(line: string): HealthRecord | null {
   const leadOff = bitOrNull(map.get("LEAD_OFF"));
   const leadOn: 0 | 1 | null = leadOff === null ? null : leadOff === 0 ? 1 : 0;
 
+  let ecg = numOrNull(map.get("ECG"));
+  if (leadOn === 0) {
+    ecg = null;
+  }
+
   return {
     finger_detected: bitOrNull(map.get("FINGER")),
     lead_on: leadOn,
     lead_off: leadOff,
-    ecg: numOrNull(map.get("ECG")),
+    ecg,
     hr: numOrNull(map.get("HR")),
     spo2: numOrNull(map.get("SPO2")),
     max30103: bitOrNull(map.get("MAX30103")),

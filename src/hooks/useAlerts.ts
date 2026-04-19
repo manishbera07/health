@@ -33,7 +33,7 @@ const beep = () => {
     osc.type = "sine";
     osc.frequency.value = 880;
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.8, ctx.currentTime + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
     osc.start();
     osc.stop(ctx.currentTime + 0.2);

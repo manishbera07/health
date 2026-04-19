@@ -39,6 +39,9 @@ export const SessionControls = ({ state, onStart, onStop, onExport, elapsedMs }:
         <span className="text-xs font-medium text-destructive">REC</span>
         <span className="font-mono-tabular text-xs text-destructive/80">{fmtElapsed(elapsedMs)}</span>
         <span className="text-xs text-muted-foreground">· {state.count} pts</span>
+        {state.dbStatus === "flushing" && <span className="text-xs text-blue-500">⟳ saving…</span>}
+        {state.dbStatus === "ok" && <span className="text-xs text-green-500">✓ {state.dbCount} saved</span>}
+        {state.dbStatus === "error" && <span className="text-xs text-red-500">⚠ DB error</span>}
         <Button onClick={onStop} size="sm" variant="destructive" className="ml-2 h-7 gap-1.5 rounded-full">
           <Square className="h-3 w-3 fill-current" /> Stop
         </Button>

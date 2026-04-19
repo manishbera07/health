@@ -50,6 +50,10 @@ const Index = () => {
   const session = useSession();
   const [now, setNow] = useState(Date.now());
 
+  // Stable ref so handleLine never needs to depend on session object
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; });
+
   // Tick recording timer
   useEffect(() => {
     if (!session.state.recording) return;
@@ -99,15 +103,25 @@ const Index = () => {
     if (rec.hr !== null) lastHr.current = rec.hr;
     if (rec.spo2 !== null) lastSpo2.current = rec.spo2;
     if (rec.ecg !== null) ecgRef.current = rec.ecg;
-    if (session.state.recording) session.push(rec);
+    // Use ref to avoid recreating this callback on every session state update
+    if (sessionRef.current.state.recording) sessionRef.current.push(rec);
     scheduleFlush();
-  }, [scheduleFlush, session]);
+  }, [scheduleFlush]);
 
   const handleStatus = useCallback((s: ConnectionStatus, detail?: string) => {
     setStatus(s);
     setStatusDetail(detail ?? "");
-    if (s === "connected") toast.success(`Connected${detail ? ` — ${detail}` : ""}`);
+    if (s === "connected") {
+      toast.success(`Connected${detail ? ` — ${detail}` : ""}`);
+      // Auto-start saving to database on connect
+      if (!sessionRef.current.state.recording) {
+        sessionRef.current.start(`auto-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`);
+      }
+    }
     if (s === "error" && detail) toast.error(detail);
+    if ((s === "disconnected" || s === "error") && sessionRef.current.state.recording) {
+      sessionRef.current.stop();
+    }
   }, []);
 
   const connect = useCallback(async () => {

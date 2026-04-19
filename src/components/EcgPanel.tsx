@@ -16,7 +16,14 @@ export const EcgPanel = ({ ecg, active, rhythm }: Props) => {
             <Activity className="h-3.5 w-3.5" />
             <span className="text-xs font-medium uppercase tracking-wider">Real-time Rhythm</span>
           </div>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{rhythm}</h2>
+          <div className="mt-1 flex items-baseline gap-3">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">{rhythm}</h2>
+            {active && ecg !== null && (
+              <span className="font-mono text-lg font-medium text-ecg">
+                {ecg} <span className="text-xs text-muted-foreground">ADC</span>
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5">
           <Heart className={`h-3.5 w-3.5 text-accent ${active ? "heartbeat" : ""}`} />
