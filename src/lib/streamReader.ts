@@ -105,9 +105,16 @@ export class BluetoothStream {
     return typeof navigator !== "undefined" && "bluetooth" in navigator;
   }
 
+  private connected = false;
+  private onDisconnect = () => {
+    if (!this.connected) return;
+    this.connected = false;
+    this.handlers.onStatus("disconnected");
+  };
+
   async connect() {
     if (!BluetoothStream.isSupported()) {
-      this.handlers.onStatus("error", "Web Bluetooth not supported in this browser");
+      this.handlers.onStatus("error", "Web Bluetooth not supported in this browser. Use Chrome/Edge desktop or Android Chrome — iOS is not supported.");
       return;
     }
     try {
@@ -117,18 +124,37 @@ export class BluetoothStream {
         filters: [{ services: [NUS_SERVICE_UUID] }],
         optionalServices: [NUS_SERVICE_UUID],
       });
-      this.device.addEventListener("gattserverdisconnected", () =>
-        this.handlers.onStatus("disconnected")
-      );
-      const server = await this.device.gatt.connect();
+      if (!this.device?.gatt) throw new Error("Selected device has no GATT server");
+
+      this.device.addEventListener("gattserverdisconnected", this.onDisconnect);
+
+      // Retry GATT connect — first attempt often fails right after pairing
+      let server: any = null;
+      let lastErr: any = null;
+      for (let i = 0; i < 3; i++) {
+        try {
+          server = await this.device.gatt.connect();
+          if (server?.connected) break;
+        } catch (err) {
+          lastErr = err;
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      }
+      if (!server?.connected) throw lastErr ?? new Error("Could not connect to GATT server");
+
       const service = await server.getPrimaryService(NUS_SERVICE_UUID);
       this.txChar = await service.getCharacteristic(NUS_TX_CHAR_UUID);
       this.txChar.addEventListener("characteristicvaluechanged", this.onValue);
       await this.txChar.startNotifications();
+      this.connected = true;
       this.handlers.onStatus("connected", `BLE · ${this.device.name ?? "device"}`);
     } catch (e: any) {
-      this.handlers.onStatus("error", e?.message ?? "Bluetooth error");
+      const msg = e?.message ?? String(e ?? "Bluetooth error");
+      this.handlers.onStatus("error", msg);
+      try { this.device?.gatt?.disconnect(); } catch {}
       this.device = null;
+      this.txChar = null;
+      this.connected = false;
     }
   }
 
@@ -139,10 +165,12 @@ export class BluetoothStream {
   };
 
   async disconnect() {
+    this.connected = false;
     try {
       this.txChar?.removeEventListener("characteristicvaluechanged", this.onValue);
       await this.txChar?.stopNotifications();
     } catch {}
+    try { this.device?.removeEventListener("gattserverdisconnected", this.onDisconnect); } catch {}
     try { this.device?.gatt?.disconnect(); } catch {}
     this.device = null;
     this.txChar = null;
